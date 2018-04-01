@@ -167,7 +167,7 @@ In [DomainDuplicate class](https://github.com/hayj/DomainDuplicate/blob/master/d
 
 ### LangRecognizer
 
-In [LangRecognizer](https://github.com/hayj/NLPTools/blob/master/nlptools/langrecognizer.py) we use a SD to do not re-compute text we already for which we already recognized the lang. It allow the user of this library to do not take care of the computation time of the NLP function in the case he already ask the lang of a text.
+In [LangRecognizer](https://github.com/hayj/NLPTools/blob/master/nlptools/langrecognizer.py) we use a SD to do not re-compute text for which we already recognized the lang. It allow the user of this library to do not take care of the computation time of the NLP function in the case he already ask the lang of a text.
 
 ### A cache for GitHub scripts
 
