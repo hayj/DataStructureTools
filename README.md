@@ -181,4 +181,4 @@ In this project, the key is a html string and the "item result" is a Python dict
 
 ### Crawling
 
-In another project which implies the crawling of urls, we use SD to retain which urls failed, so we can share failed across several servers which a Mongo database to don't re-crawl these urls.
+In another project which implies the crawling of urls, we use SD to retain which urls failed, so we can share failed across several servers using the MongoDB support of SD to don't re-crawl these urls.
