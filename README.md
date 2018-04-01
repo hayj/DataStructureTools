@@ -39,7 +39,7 @@ With default parameters, a SD works the same as a Python dict:
 	>>> sd = SerializableDict()
 	>>> sd["a"] = 1
 
-But it retains each get / add / update in a private dict structure:
+But it retains each get / add / update timestamps in a private dict structure:
 
 	>>> print(sd.data)
 	{'a': {'read': 1522590582.0, 'modified': 1522590582.0, 'modifiedCount': 0, 'readCount': 0, 'created': 1522590582.0, 'value': 1}}
@@ -78,7 +78,7 @@ Now each time you receive a new string (from outside), you can use SD as a cache
 
 So in case you receive same strings several times, you don't re-compute `strToLower`. The SD structure will keep fresh computed items and automatically remove old items. The items that are most often received will be kept in priority (according to read, modified and created timestamps).
 
-If you want to set the clean frequency, you can use `cleanEachNAction` init param:
+If you want to set the clean frequency, you can use `cleanEachNAction` init param (`500` is the default):
 
 	>>> sd = SerializableDict(limit=100, cleanEachNAction=500)
 
@@ -123,7 +123,7 @@ You can also reset the data (and remove the pickle file) using:
 
 The counterpart of these 2 features described above (using the `funct` init param) is you can misdesign your program and return an old "item result" (the processing of the item) which is not a right one according to you actual program version. In our case, for example, imagine you updated the `strToLower` function so it doesn't lower the first letter of the text, you may not realize that your `sd` return bad "item results" because it return old ones loaded from the pickle file.
 
-So to be sure to not misdesign your program, you can set the init param `cacheCheckRatio`. It enable the re-computation of an item even it already exists. `cacheCheckRatio` is the probability to re-compute an item. If you misdesigned your program, it will throw an `Exception` or just log an error if you set the init param `raiseBadDesignException` as `False`.
+So to be sure to do not misdesign your program, you can set the init param `cacheCheckRatio`. It enable the re-computation of an item even it already exists. `cacheCheckRatio` is the probability to re-compute an item. If you misdesigned your program, it will throw an `Exception` or just log an error if you set the init param `raiseBadDesignException` as `False`.
 
 	>>> sd = SerializableDict(funct=strToLower, limit=100, cacheCheckRatio=0.1)
 
@@ -149,13 +149,13 @@ For example, in the case you have to download a web page in your script but you 
 	>>> sd = SerializableDict(name="my_downloaded_data",
 			cleanNotReadOrModifiedSinceNDays=10, funct=downloadMyData)
 
-So all items which were read/add/modified (take the most recent one) more than 10 days will be remove and a `get` action on your SD will re-download the data. You can also use `cleanNotReadOrModifiedSinceNSeconds`.
+So all items which were read / add / modified (take the most recent one) more than 10 days will be remove and a `get` action on your SD will re-download the data. You can also use `cleanNotReadOrModifiedSinceNSeconds`.
 
 ## Examples
 
 ### Unit tests
 
-You can see [unit test (TODO)]() which shows a more in-depth usage of SD.
+You can see [unit tests](https://github.com/hayj/DataStructureTools/blob/master/datastructuretools/test/hashmap.py) which shows a more in-depth usage of SD.
 
 ### Unshortener
 
