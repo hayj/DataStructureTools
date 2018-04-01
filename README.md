@@ -1,9 +1,9 @@
 
 # SerializableDict
 
-## Installation
+## Installation (Python 3)
 
-	git clone git@github.com:hayj/DataStructureTools.git
+	git clone https://github.com/hayj/DataStructureTools.git
 	pip install ./DataStructureTools/wm-dist/*.tar.gz
 
 ## Description
@@ -22,11 +22,11 @@ A `SerializableDict` is a Python dict which works as a "cache". It can automatic
  * **cleanNotReadOrModifiedSinceNDays**: Set a day old limit
  * **cleanNotReadOrModifiedSinceNSeconds**: Set a second old limit
  * **cleanEachNAction**: This int determines the clean frequency (an action is a read / add / update)
- * **serializeEachNAction**: This int determines the serialize frequency
+ * **serializeEachNAction**: This int determines the serialization frequency
  * **cacheCheckRatio**: The probability an item will be re-processed to check if your program has been misdesigned (for usage of a cache which is supposed to return always same values)
  * **raiseBadDesignException**: Set it as `False` if you want an logged error instead of an Exception in the case you misdesigned your Python script
  * **readAndAddOnly**: Set this init param as `True` if you don't want to update any item
- * **logger**: A logger from `systemtools.logger` (hjsystemtools dependency)
+ * **logger**: A logger from `systemtools.logger` (see [SystemTools](https://github.com/hayj/SystemTools))
  * **verbose**: To set the verbose (`True` or `False`)
 
 ## Tutorial
