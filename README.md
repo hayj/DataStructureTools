@@ -96,7 +96,7 @@ And we don't even have to define the `compute` function but use `sd` directly...
 
 If your processing funct (`strToLower` in our case) have extra parameters (say a boolean `toStrip=True`), instead of doing `sd[text]` you can use the get class method this way (with `*args, **kwargs`):
 
-	sd.get(text, toStrip=False)
+	>>> sd.get(text, toStrip=False)
 
 The benefit of this feature is that you can design you program a way you don't care about existing items, you simply use the `sd` cache always like the processed result of the item exists.
 
@@ -123,7 +123,7 @@ You can also reset the data (and remove the pickle file) using:
 
 The counterpart of these 2 features described above (using the `funct` init param) is you can misdesign your program and return an old "item result" (the processing of the item) which is not a right one according to you actual program version. In our case, for example, imagine you updated the `strToLower` function so it doesn't lower the first letter of the text, you may not realize that your `sd` return bad "item results" because it return old ones loaded from the pickle file.
 
-So to be sure to do not misdesign your program, you can set the init param `cacheCheckRatio`. It enable the re-computation of an item even it already exists. `cacheCheckRatio` is the probability to re-compute an item. If you misdesigned your program, it will throw an `Exception` or just log an error if you set the init param `raiseBadDesignException` as `False`.
+So to be sure to do not misdesign your program, you can set the init param `cacheCheckRatio`. It enable the re-computation of an item even it already exists. `cacheCheckRatio` is the probability to re-compute an item at each action. If you misdesigned your program (i.e. the new value is different from the old one in the SD), it will throw an `Exception` or just log an error if you set the init param `raiseBadDesignException` as `False`.
 
 	>>> sd = SerializableDict(funct=strToLower, limit=100, cacheCheckRatio=0.1)
 
