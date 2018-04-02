@@ -131,7 +131,7 @@ If you set the `cacheCheckRatio` probability to `0.1`, you will loose ~10% compu
 
 ### Serialization through a MongoDB collection
 
-If you need to centralize your data in the case you have several servers, or several process, or if you want to take benefit of all advantages of MongoDB in its indexing capability, you can set `useMongodb` as `True` and give `host`, `user` and `password`:
+If you need to centralize your data in the case you have several servers, or several process, or if you want to take benefit of MongoDB in its indexing capability, you can set `useMongodb` as `True` and give `host`, `user` and `password`:
 
 	>>> sd = SerializableDict(name="mycollection", useMongodb=True,
 	            host="localhost", user=None, password=None) # Default
