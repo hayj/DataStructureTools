@@ -17,25 +17,6 @@ def objectSizeMo(obj):
     return size
 
 class SerializableDict():
-    """
-        :params:
-         * **name**: The name for the pickle file or the MongoDB collection
-         * **dirPath**: The directory where you want to store the pickle file
-         * **funct**: A processing function which is used to process all items you want to access through `__getitem__` (e.g. `sd[key]`)
-         * **useMongodb**: Set it as `True` if you want to use a MongoDB collection instead of a pickle file
-         * **host**, **user** and **password**: For the Mongo database
-         * **limit**: Set a size limit to the SD dict, so old / not used items will be deleted in priority
-         * **cleanMaxSizeMoReadModifiedOlder**: Set a size limit in Mo
-         * **cleanNotReadOrModifiedSinceNDays**: Set a day old limit
-         * **cleanNotReadOrModifiedSinceNSeconds**: Set a second old limit
-         * **cleanEachNAction**: This int determines the clean frequency (an action is a read / add / update)
-         * **serializeEachNAction**: This int determines the serialize frequency
-         * **cacheCheckRatio**: The probability an item will be re-processed to check if your program has been misdesigned (for usage of a cache which is supposed to return always same values)
-         * **raiseBadDesignException**: Set it as `False` if you want an logged error instead of an Exception in the case you misdesigned your Python script
-         * **readAndAddOnly**: Set this init param as `True` if you don't want to update any item
-         * **logger**: A logger from `systemtools.logger` (hjsystemtools dependency)
-         * **verbose**: To set the verbose (`True` or `False`)
-    """
     def __init__ \
     (
         self,
@@ -59,6 +40,9 @@ class SerializableDict():
         host="localhost", user=None, password=None,
         mongoIndex="hash",
     ):
+        """
+            Read the README
+        """
         # Some checks:
         if dirPath is None:
             dirPath = tmpDir("SerializableDicts")

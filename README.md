@@ -1,14 +1,12 @@
 
 # SerializableDict
 
+A `SerializableDict` is a Python dict which works as a "cache". It can automatically serialize your data in a pickle file or in a Mongo database. It allow you to design your program more easily by providing a dict access which automatically process the given key (or "item"). It can limit the RAM usage / disk usage by removing old / not used items in the structure.
+
 ## Installation (Python 3)
 
 	git clone https://github.com/hayj/DataStructureTools.git
 	pip install ./DataStructureTools/wm-dist/*.tar.gz
-
-## Description
-
-A `SerializableDict` is a Python dict which works as a "cache". It can automatically serialize your data in a pickle file or in a Mongo database. It allow you to design your program more easily by providing a dict access which automatically process the given key (or "item"). It can limit the RAM usage / disk usage by removing old / not used items in the structure.
 
 ## Initialization parameters
 
@@ -149,7 +147,7 @@ For example, in the case you have to download a web page in your script but you 
 	>>> sd = SerializableDict(name="my_downloaded_data",
 			cleanNotReadOrModifiedSinceNDays=10, funct=downloadMyData)
 
-So all items which were read / add / modified (take the most recent one) more than 10 days will be remove and a `get` action on your SD will re-download the data. You can also use `cleanNotReadOrModifiedSinceNSeconds`.
+So all items which were read / add / modified (take the most recent one) more than 10 days will be remove and a `get` action on your SD will re-download the data. You can also use `cleanNotReadOrModifiedSinceNSeconds`. See `BashScripts` below for a concrete example.
 
 ## Examples
 
@@ -169,7 +167,7 @@ In [DomainDuplicate class](https://github.com/hayj/DomainDuplicate/blob/master/d
 
 In [LangRecognizer](https://github.com/hayj/NLPTools/blob/master/nlptools/langrecognizer.py) we use a SD to do not re-compute text for which we already recognized the lang. It allow the user of this library to do not take care of the computation time of the NLP function in the case he already ask the lang of a text.
 
-### A cache for GitHub scripts
+### A cache for bash scripts
 
 [The BashScripts class](https://github.com/hayj/DataTools/blob/master/datatools/bashscripts.py) use a SD to download and cache GitHub bash scripts and reload these script each 10 days from <https://github.com/hayj/Bash>.
 

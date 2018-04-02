@@ -2,7 +2,7 @@
 
 
 # coding: utf-8
-# pew in datatools-venv python ./test/hashmap.py
+# pew in datastructuretools-venv python ./test/hashmap.py
 
 import os
 import sys
