@@ -25,7 +25,7 @@ class Pool:
         parallelCount=None,
         verbose=True,
         logger=None,
-        mapType=MAP_TYPE.pathos,
+        mapType=MAP_TYPE.multiprocessing,
         sparkDriverMaxResultSize=2,
         sparkDriverMemory=2,
         sparkExecutorMemory=2,

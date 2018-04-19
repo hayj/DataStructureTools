@@ -6,6 +6,7 @@ from systemtools.logger import *
 from systemtools.location import *
 from systemtools.file import *
 from databasetools.mongo import *
+from datastructuretools import config
 import os
 import gzip
 import sys
@@ -37,8 +38,10 @@ class SerializableDict():
         cacheCheckRatio=0.0, # 0.01
         raiseBadDesignException=True,
         useMongodb=False,
-        host="localhost", user=None, password=None,
+        host=None, user=None, password=None,
         mongoIndex="hash",
+        useLocalhostIfRemoteUnreachable=True,
+        mongoDbName=None,
     ):
         """
             Read the README
@@ -59,6 +62,7 @@ class SerializableDict():
         if self.name is None:
             self.name = getRandomStr()
         self.doSerialize = doSerialize
+        self.mongoDbName = mongoDbName
         self.serializeEachNAction = serializeEachNAction
         if not self.doSerialize:
             self.serializeEachNAction = 0
@@ -66,12 +70,22 @@ class SerializableDict():
         self.filePath = dirPath + "/" + self.name + ".pickle.zip"
 
         # Now we store all vars:
+        self.useLocalhostIfRemoteUnreachable = useLocalhostIfRemoteUnreachable
         self.mongoIndex = mongoIndex
         self.host = host
         self.user = user
         self.password = password
         self.logger = logger
         self.verbose = verbose
+        # Config:
+        if self.user is None:
+            self.user = config.sdUser
+        if self.password is None:
+            self.password = config.sdPassword
+        if self.host is None:
+            self.host = config.sdHost
+        if self.mongoDbName is None:
+            self.mongoDbName = config.sdDatabaseName
         self.cleanMaxSizeMoReadModifiedOlder = cleanMaxSizeMoReadModifiedOlder
         self.initData()
         self.processingFunct = funct
@@ -257,18 +271,28 @@ class SerializableDict():
     def removeFile(self):
         removeIfExists(self.filePath)
 
-    def initData(self):
+    def initData(self, alreadyRetried=False):
         if self.useMongodb:
-            self.data = MongoCollection\
-            (
-                "serializabledict",
-                self.name,
-                giveTimestamp=False,
-                indexOn=self.mongoIndex,
-                host=self.host, user=self.user, password=self.password,
-                logger=self.logger,
-                verbose=self.verbose,
-            )
+            try:
+                self.data = MongoCollection\
+                (
+                    self.mongoDbName,
+                    self.name,
+                    giveTimestamp=False,
+                    indexOn=self.mongoIndex,
+                    host=self.host, user=self.user, password=self.password,
+                    logger=self.logger,
+                    verbose=self.verbose,
+                )
+            except Exception as e:
+                if self.useLocalhostIfRemoteUnreachable and not alreadyRetried:
+                    logException(e, self, location="initData hashmap", message="WARNING: we can't access the remote SD, so we use the localhost...")
+                    self.user = None
+                    self.password = None
+                    self.host = "localhost"
+                    self.initData(alreadyRetried=True)
+                else:
+                    raise e
         else:
             self.data = dict()
 
@@ -289,7 +313,11 @@ class SerializableDict():
 
     def getToDeleteOlder(self, toDeleteCount):
         sortedIndex = []
-        for key, value in self.data.items():
+        if self.useMongodb:
+            theIterator = self.data.items(projection={"modified": 1, "read": 1})
+        else:
+            theIterator = self.data.items()
+        for key, value in theIterator:
             currentModified = value["modified"]
             currentRead = value["read"]
             toTake = currentModified

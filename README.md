@@ -147,7 +147,7 @@ For example, in the case you have to download a web page in your script but you 
 	>>> sd = SerializableDict(name="my_downloaded_data",
 			cleanNotReadOrModifiedSinceNDays=10, funct=downloadMyData)
 
-So all items which were read / add / modified (take the most recent one) more than 10 days will be remove and a `get` action on your SD will re-download the data. You can also use `cleanNotReadOrModifiedSinceNSeconds`. See `BashScripts` below for a concrete example.
+So all items which were read / add / modified (take the most recent one) more than 10 days will be remove and a `get` action on your SD will re-download the data. You can also use `cleanNotReadOrModifiedSinceNSeconds`. Read `BashScripts` below for a concrete example.
 
 ## Examples
 
