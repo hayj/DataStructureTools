@@ -5,11 +5,13 @@ from orderedset import OrderedSet
 from threading import Lock
 
 
+
 class OrderedSetQueue(Queue):
     """
         https://stackoverflow.com/questions/16506429/check-if-element-is-already-in-a-queue
     """
     def _init(self, maxsize):
+        # print("b" * 200)
         self.cacheLock = Lock()
         self.queue = OrderedSet()
     def _put(self, item):

@@ -2,7 +2,7 @@
 
 
 # coding: utf-8
-# pew in datastructuretools-venv python ./test/hashmap.py
+# pew in st-venv python /home/hayj/Workspace/Python/Utils/DataStructureTools/datastructuretools/test/hashmap.py
 
 import os
 import sys
@@ -18,8 +18,8 @@ from datastructuretools import hashmap
 from datastructuretools.hashmap import *
 
 # The level allow the unit test execution to choose only the top level test
-min = 0
-max = 11
+min = 12
+max = 12
 assert min <= max
 
 print("==============\nStarting unit tests...")
@@ -130,8 +130,8 @@ if min <= 4 <= max:
                 gotLowerDataSizeThanPrevious = False
                 previousDataSize = -10
                 previousSize = -10
-
-                for i in range(100000):
+                isOk = False
+                for i in range(1000000):
                     if i % 10000 == 0:
                         currentDataSize = sd.dataSizeMo()
                         currentSize = sd.size()
@@ -140,6 +140,7 @@ if min <= 4 <= max:
                         if currentDataSize < previousDataSize:
                             gotLowerDataSizeThanPrevious = True
                         if gotLowerDataSizeThanPrevious and gotLowerSizeThanPrevious:
+                            isOk = True
                             break
                         print("i=" + str(i))
                         print("objectSize=" + str(objectSize(sd.data)))
@@ -151,8 +152,7 @@ if min <= 4 <= max:
     #                     input()
                     sd.add(i, {getRandomStr(): getRandomStr()})
 
-                self.assertTrue(gotLowerDataSizeThanPrevious)
-                self.assertTrue(gotLowerSizeThanPrevious)
+                self.assertTrue(isOk)
 
                 sd.reset()
 
@@ -371,7 +371,37 @@ if min <= 11 <= max:
                 self.assertTrue(sd["b"] == 1)
                 sd.reset()
 
-
+if min <= 12 <= max:
+    class Test12(unittest.TestCase):
+        def test1(self):
+            sd = SerializableDict\
+            (
+                name="test12",
+                limit=None,
+                verbose=True,
+                cleanMaxSizeMoReadModifiedOlder=1000,
+                cacheCheckRatio=0.0,
+                useMongodb=False,
+                cleanEachNAction=None,
+                doSerialize=False,
+            )
+            i = 0
+            while True:
+                text = getRandomStr()
+                sd[text] = 1
+                if i % 200000 == 0:
+                    tt = TicToc()
+                    tt.tic(display=False)
+                    moSize = sd.dataSizeMo()
+                    print("size mo: " + str(moSize))
+                    print("size: " + str(sd.size()))
+                    tt.toc()
+                    if moSize > 3000:
+                        tt = TicToc()
+                        tt.tic("Cleaning")
+                        sd.clean()
+                        tt.toc("Clean done")
+                i += 1
 
 
 if __name__ == '__main__':
@@ -388,67 +418,3 @@ if __name__ == '__main__':
 
 
 
-
-
-
-
-# if min <= 1 <= max:
-#     # DEPRECATED
-#     class Test1(unittest.TestCase):
-#         def setUp(self):
-#             pass
-#
-#         def testLoadingAll(self):
-#
-#             workingDirectory = getWorkingDirectory() + "/test_limitedhashmap.bin";
-#             hm = SerializableHashMap(workingDirectory);
-#             hm.clean();
-#
-#             self.assertTrue(hm.getOne("test1") == None);
-#             self.assertTrue(hm.getOne("468748641") == None);
-#
-#             hm.add("test1", 15);
-#             hm.add("test2", "yo");
-#
-#             self.assertTrue(hm.getOne("test2") is not None);
-#
-#             hm.serialize();
-#
-#             hm.getOne("test1");
-#
-#             hm2 = SerializableHashMap(workingDirectory);
-#
-#             self.assertTrue(hm.getOne("test2") == hm2.getOne("test2"));
-#
-#
-#         def testTryAgain(self):
-#             # to test the clean...
-#             self.testLoadingAll();
-#
-#
-#         def testRecursive(self):
-#
-#             workingDirectory = getWorkingDirectory() + "/test2_limitedhashmap.bin";
-#             hm = SerializableHashMap(workingDirectory);
-#             hm.clean();
-#
-#             d = dict();
-#             d2 = dict();
-#             d2["test"] = 42;
-#             d["d2"] = d2;
-#             hm.add("d", d);
-#             hm.serialize();
-#
-#
-#             hm2 = SerializableHashMap(workingDirectory);
-#             self.assertTrue(hm2.getOne("d")["d2"]["test"] == d2["test"]);
-#
-#
-#         def testSentencePair(self):
-#             d = dict();
-#             obj = SentencePair('a', 'b');
-#             d[obj] = "yo"
-#             self.assertTrue(d[obj] == 'yo');
-#             self.assertTrue(SentencePair('a', 'b') in d);
-#             self.assertTrue(d[SentencePair('a', 'b')] == "yo");
-#             self.assertTrue((SentencePair('c', 'd') in d) == False);

@@ -10,6 +10,7 @@ from datastructuretools import config
 import os
 import gzip
 import sys
+import copy
 
 def objectSizeMo(obj):
     size = sys.getsizeof(obj)
@@ -141,7 +142,20 @@ class SerializableDict():
             else:
                 f = open(self.filePath, 'wb')
             try:
-                pickle.dump(self.data, f, pickle.HIGHEST_PROTOCOL)
+                data = self.data
+                # data = copy.deepcopy(self.data)
+                # data = dictToMongoStorable\
+                # (
+                #     data,
+                #     logger=self.logger,
+                #     verbose=self.verbose,
+                #     normalizeKeys=False,
+                #     normalizeEnums=False,
+                #     normalizeBigInts=False,
+                #     convertTuples=False,
+                #     convertSets=False,
+                # )
+                pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
             except Exception as e:
                 logException(e, self, location="SerializableDict serialize()")
             finally:

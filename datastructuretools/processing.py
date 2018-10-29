@@ -1,4 +1,4 @@
-from multiprocessing import cpu_count, Process, Pipe, Queue
+from multiprocessing import cpu_count, Process, Pipe, Queue, JoinableQueue
 from multiprocessing import Pool as MPPool
 from systemtools.basics import *
 from systemtools.duration import *
@@ -80,6 +80,7 @@ class Pool:
         return self.mapType == MAP_TYPE.spark and sparkAlreadyImported
 
     def map(self, funct, data):
+        localTT = TicToc(logger=Logger(tmpDir() + "/" + getRandomStr() + ".log"))
         result = None
         if callable(data):
             (funct, data) = (data, funct)
@@ -100,7 +101,15 @@ class Pool:
             else:
                 result = map(funct, data)
         else:
+            localTT.tic("map: start")
             result = self.pool.map(funct, data)
+            localTT.tic("map: start done, doing close")
+            self.pool.close() # Very important because if we doesn't close the pool, processes stay allcated in the OS
+            localTT.tic("map: close done, doing join")
+            self.pool.join() # Also important...
+        localTT.tic("map: join done, doing list(result)")
+        result = list(result)
+        localTT.toc("map: end")
         return list(result)
 
 def multithreadMap(funct, data, threadNumber=cpu_count()):
@@ -222,9 +231,90 @@ def test01():
 
 
 
+def itemGeneratorWrapper(containersSubset, itemGenerator, itemQueue, pbarQueue, verbose, name):
+    logger = Logger(name + ".log")
+    for container in containersSubset:
+        # log("Doing " + filePath, logger, verbose=logFilesPath)
+        for current in itemGenerator(container, logger=logger, verbose=verbose):
+            itemQueue.put(current)
+        pbarQueue.put(None)
+    itemQueue.close()
+
+class MultiprocessingGenerator():
+    """
+        Example for icwsm2009
+
+        TODO initVars before itenrating over a containersSubset (for example urlParser...)
+    """
+    def __init__(self, containers, itemGenerator, logger=None, verbose=True, name=None, parallelProcesses=cpuCount(), printRatio=0.001, queueMaxSize=100000):
+        self.queueMaxSize = queueMaxSize
+        self.printRatio = printRatio
+        self.parallelProcesses = parallelProcesses
+        self.logger = logger
+        self.verbose = verbose
+        self.containers = containers
+        self.itemGenerator = itemGenerator
+        self.name = name
+        if self.name is None:
+            self.name = ""
+        else:
+            self.name = "-" + self.name
+
+    def __iter__(self):
+        itemQueue = Queue(self.queueMaxSize)
+        log(str(len(self.containers)) + " containers to process.", self)
+        pbar = ProgressBar(len(self.containers), printRatio=self.printRatio, logger=self.logger, verbose=self.verbose)
+        pbarQueue = pbar.startQueue()
+        containersSets = split(self.containers, self.parallelProcesses)
+        processes = []
+        for containersSubset in containersSets:
+            if len(containersSubset) > 0:
+                name = getRandomName() + self.name
+                p = Process(target=itemGeneratorWrapper, args=(containersSubset, self.itemGenerator, itemQueue, pbarQueue, self.verbose, name,))
+                p.start()
+                processes.append(p)
+        while True:
+            try:
+                current = itemQueue.get(timeout=0.5)
+                # Ca bloque au dernier ici PK ?
+                # Parce que mongodb est plus lent
+                yield current
+            except Exception as e:
+                oneIsAlive = False
+                for p in processes:
+                    if p.is_alive():
+                        oneIsAlive = True
+                        break
+                if not oneIsAlive:
+                    break
+            # if isinstance(current, str) and current == terminatedToken:
+            #   break
+        for p in processes:
+            p.join()
+        pbar.stopQueue()
 
 
-
+def threadGen(generator, maxsize=100, logger=None, verbose=True):
+    """
+        This function will load maxsize items in advance from the generator using a threading.Thread and a queue.Queue.
+        It is usefull when some items take a long time to load and you don't want to wait at inch step when you wrote `input()` in your script.
+        It is also usefull to smooth the processing of items: if some items take time to be loaded and other take time to be processed, use this function to smooth the processing and don't loose proc time.
+        TODO the multiprocessing version of this function.
+    """
+    from threading import Thread
+    import queue
+    theQueue = queue.Queue(maxsize=maxsize)
+    def target(generator, theQueue, logger=None, verbose=True):
+        for item in generator:
+            if item is not None:
+                theQueue.put(item)
+        theQueue.put(None)
+    theThread = Thread(target=target, args=(generator, theQueue,),
+        kwargs={"logger": logger, "verbose": verbose})
+    theThread.start()
+    for item in iter(theQueue.get, None):
+        yield item
+    theThread.join()
 
 
 if __name__ == '__main__':
