@@ -297,6 +297,7 @@ class SerializableDict():
                     host=self.host, user=self.user, password=self.password,
                     logger=self.logger,
                     verbose=self.verbose,
+                    databaseRoot="annotator",
                 )
             except Exception as e:
                 if self.useLocalhostIfRemoteUnreachable and not alreadyRetried:

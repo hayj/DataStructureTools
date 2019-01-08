@@ -297,7 +297,7 @@ class MultiprocessingGenerator():
 def threadGen(generator, maxsize=100, logger=None, verbose=True):
     """
         This function will load maxsize items in advance from the generator using a threading.Thread and a queue.Queue.
-        It is usefull when some items take a long time to load and you don't want to wait at inch step when you wrote `input()` in your script.
+        It is usefull when some items take a long time to load and you don't want to wait at each step when you write `input()` in your script.
         It is also usefull to smooth the processing of items: if some items take time to be loaded and other take time to be processed, use this function to smooth the processing and don't loose proc time.
         TODO the multiprocessing version of this function.
     """
