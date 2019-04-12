@@ -80,6 +80,7 @@ class SerializableDict():
         self.logger = logger
         self.verbose = verbose
         # Config:
+        self.databaseRoot = databaseRoot
         if self.databaseRoot is None:
             self.databaseRoot = config.sdDatabaseRoot
         if self.user is None:
