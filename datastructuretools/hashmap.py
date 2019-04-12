@@ -43,6 +43,7 @@ class SerializableDict():
         mongoIndex="hash",
         useLocalhostIfRemoteUnreachable=True,
         mongoDbName=None,
+        databaseRoot=None,
     ):
         """
             Read the README
@@ -79,6 +80,8 @@ class SerializableDict():
         self.logger = logger
         self.verbose = verbose
         # Config:
+        if self.databaseRoot is None:
+            self.databaseRoot = config.sdDatabaseRoot
         if self.user is None:
             self.user = config.sdUser
         if self.password is None:
@@ -297,7 +300,7 @@ class SerializableDict():
                     host=self.host, user=self.user, password=self.password,
                     logger=self.logger,
                     verbose=self.verbose,
-                    databaseRoot="annotator",
+                    databaseRoot=self.databaseRoot,
                 )
             except Exception as e:
                 if self.useLocalhostIfRemoteUnreachable and not alreadyRetried:

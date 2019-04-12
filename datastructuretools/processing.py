@@ -80,7 +80,7 @@ class Pool:
         return self.mapType == MAP_TYPE.spark and sparkAlreadyImported
 
     def map(self, funct, data):
-        localTT = TicToc(logger=Logger(tmpDir() + "/" + getRandomStr() + ".log"))
+        localTT = TicToc(logger=Logger(tmpDir() + "/" + getRandomStr() + ".log"), verbose=self.verbose)
         result = None
         if callable(data):
             (funct, data) = (data, funct)
@@ -232,7 +232,9 @@ def test01():
 
 
 def itemGeneratorWrapper(containersSubset, itemGenerator, itemQueue, pbarQueue, verbose, name):
-    logger = Logger(name + ".log")
+    logger = None
+    if verbose:
+        logger = Logger(name + ".log")
     for container in containersSubset:
         # log("Doing " + filePath, logger, verbose=logFilesPath)
         for current in itemGenerator(container, logger=logger, verbose=verbose):
@@ -242,11 +244,16 @@ def itemGeneratorWrapper(containersSubset, itemGenerator, itemQueue, pbarQueue, 
 
 class MultiprocessingGenerator():
     """
-        Example for icwsm2009
+        This class take containers of data (for exemples files path), and a function which will read and return element given one container.
+
+        Example for icwsm2009 (/home/hayj/Workspace/Python/Datasets/NewsSource/newssource/dataset/icwsm2009-convert1.py)
 
         TODO initVars before itenrating over a containersSubset (for example urlParser...)
+
+        TODO allow to stop all even we do not consum all data...
     """
-    def __init__(self, containers, itemGenerator, logger=None, verbose=True, name=None, parallelProcesses=cpuCount(), printRatio=0.001, queueMaxSize=100000):
+    def __init__(self, containers, itemGenerator, logger=None, verbose=True, name=None, parallelProcesses=cpuCount(), printRatio=0.001, queueMaxSize=100000, processVerbose=False):
+        self.processVerbose = processVerbose
         self.queueMaxSize = queueMaxSize
         self.printRatio = printRatio
         self.parallelProcesses = parallelProcesses
@@ -259,29 +266,42 @@ class MultiprocessingGenerator():
             self.name = ""
         else:
             self.name = "-" + self.name
+        self.processes = None
+        self.itemQueue = None
+        self.hasToStop = False
+
+    # def stop(self):
+    #     self.hasToStop = True
+    #     try:
+    #         for current in self:
+    #             pass
+    #     except:
+    #         pass
 
     def __iter__(self):
-        itemQueue = Queue(self.queueMaxSize)
+        self.itemQueue = Queue(self.queueMaxSize)
         log(str(len(self.containers)) + " containers to process.", self)
         pbar = ProgressBar(len(self.containers), printRatio=self.printRatio, logger=self.logger, verbose=self.verbose)
         pbarQueue = pbar.startQueue()
         containersSets = split(self.containers, self.parallelProcesses)
-        processes = []
+        self.processes = []
         for containersSubset in containersSets:
             if len(containersSubset) > 0:
                 name = getRandomName() + self.name
-                p = Process(target=itemGeneratorWrapper, args=(containersSubset, self.itemGenerator, itemQueue, pbarQueue, self.verbose, name,))
+                p = Process(target=itemGeneratorWrapper, args=(containersSubset, self.itemGenerator, self.itemQueue, pbarQueue, self.processVerbose, name,))
                 p.start()
-                processes.append(p)
+                self.processes.append(p)
         while True:
+            if self.hasToStop:
+                break
             try:
-                current = itemQueue.get(timeout=0.5)
+                current = self.itemQueue.get(timeout=0.5)
                 # Ca bloque au dernier ici PK ?
                 # Parce que mongodb est plus lent
                 yield current
             except Exception as e:
                 oneIsAlive = False
-                for p in processes:
+                for p in self.processes:
                     if p.is_alive():
                         oneIsAlive = True
                         break
@@ -289,7 +309,7 @@ class MultiprocessingGenerator():
                     break
             # if isinstance(current, str) and current == terminatedToken:
             #   break
-        for p in processes:
+        for p in self.processes:
             p.join()
         pbar.stopQueue()
 

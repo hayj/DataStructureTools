@@ -1,6 +1,11 @@
 # coding: utf-8
 
 from collections import OrderedDict
+from systemtools.logger import *
+from systemtools.duration import *
+from systemtools.location import *
+from systemtools.file import *
+import shutil
 
 class HashableDict(dict):
     def __hash__(self):
@@ -56,8 +61,98 @@ class CacheDict(OrderedDict):
             return self.superGet(key)
 
 
+class ListChunker:
+    """
+        This class take an iterable and serialize it on disk in different
+        files according to the given chunks size.
+    """
+    def __init__(self, chunksSize, iterable=None, logger=None, verbose=True):
+        self.chunksSize = chunksSize
+        self.logger = logger
+        self.verbose = verbose
+        self.filesPath = []
+        self.currentList = []
+        self.totalSize = 0
+        self.dirPath = tmpDir("listchunker") + "/" + getRandomStr()
+        mkdir(self.dirPath)
+        if iterable is not None:
+            for current in iterable:
+                self.append(current)
+            self.close()
+
+    def __serialize(self):
+        if len(self.currentList) > 0:
+            filePath = self.dirPath + "/" + str(len(self.filesPath)) + ".pickle"
+            serialize(self.currentList, filePath)
+            self.currentList = []
+            self.filesPath.append(filePath)
+
+    def close(self):
+        self.__serialize()
+
+    def append(self, element):
+        self.currentList.append(element)
+        self.totalSize += 1
+        if len(self.currentList) == self.chunksSize:
+            self.__serialize()
+
+    def __len__(self):
+        length = len(self.filesPath)
+        if len(self.currentList) > 0:
+            length += 1
+        return length
+
+    def __getitem__(self, index):
+        if len(self.currentList) > 0 and index == len(self.filesPath):
+            return self.currentList
+        elif index >= 0 and index < len(self.filesPath):
+            return deserialize(self.filesPath[index])
+        else:
+            raise IndexError()
+
+    def reset(self):
+        self.filesPath = []
+        self.currentList = []
+        removeDirSecure(self.dirPath)
+
+    def getTotalSize(self):
+        return self.totalSize
+
+    def copyFiles(self, dirPath):
+        self.close()
+        if len(self.filesPath) > 6:
+            verbose = self.verbose
+        else:
+            verbose = False
+        for current in pb(self.filesPath, logger=self.logger, verbose=verbose, message="Storing current chunks to " + dirPath):
+            shutil.copyfile(current, dirPath + "/" + decomposePath(current)[3])
+
+
+
 if __name__ == '__main__':
-    pass
+    elements = list(range(840))
+    lc = ListChunker(100, elements)
+
+    print(len(lc))
+    # print(len(lc[7]))
+    # print(lc[7])
+
+    for current in lc:
+        print(current)
+
+    print(lc.getTotalSize())
+
+    if isinstance(lc, list):
+        print("list")
+
+    if isinstance(lc, ListChunker):
+        print("aaaaaaa")
+
+
+    lc.copyFiles(tmpDir("listchunker-copy-test"))
+
+    lc.reset()
+
 
 
 
