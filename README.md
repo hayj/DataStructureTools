@@ -1,3 +1,6 @@
+# Dependencies
+
+	pip install orderedset
 
 # SerializableDict
 

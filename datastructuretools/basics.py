@@ -66,16 +66,20 @@ class ListChunker:
         This class take an iterable and serialize it on disk in different
         files according to the given chunks size.
     """
-    def __init__(self, chunksSize, iterable=None, logger=None, verbose=True):
+    def __init__(self, chunksSize, iterable=None, dirPath=None, logger=None, verbose=True, itemizeDict=True):
         self.chunksSize = chunksSize
         self.logger = logger
         self.verbose = verbose
         self.filesPath = []
         self.currentList = []
         self.totalSize = 0
-        self.dirPath = tmpDir("listchunker") + "/" + getRandomStr()
+        self.dirPath = dirPath
+        if self.dirPath is None:
+            self.dirPath = tmpDir("listchunker") + "/" + getRandomStr()
         mkdir(self.dirPath)
         if iterable is not None:
+            if itemizeDict and isinstance(iterable, dict):
+                iterable = iterable.items()
             for current in iterable:
                 self.append(current)
             self.close()
@@ -127,7 +131,19 @@ class ListChunker:
         for current in pb(self.filesPath, logger=self.logger, verbose=verbose, message="Storing current chunks to " + dirPath):
             shutil.copyfile(current, dirPath + "/" + decomposePath(current)[3])
 
-
+def deserializeListChunks(dirPath, unItemizeDict=False, logger=None, verbose=True):
+    if unItemizeDict:
+        data = dict()
+    else:
+        data = []    
+    for path in pb(sortedGlob(dirPath + "/*.pickle"), logger=logger, verbose=verbose):
+        current = deserialize(path)
+        if unItemizeDict:
+            for key, value in current:
+                data[key] = value
+        else:
+            data += current
+    return data
 
 if __name__ == '__main__':
     elements = list(range(840))
