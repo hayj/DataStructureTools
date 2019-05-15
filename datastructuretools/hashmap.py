@@ -131,6 +131,8 @@ class SerializableDict():
         pass
 #         return self.stop()
 
+    def getData(self):
+        return self.data
 
     def items(self):
         for key, value in self.data.items():

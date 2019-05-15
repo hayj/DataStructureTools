@@ -127,9 +127,36 @@ class Trie:
 		return longest
 
 
-def makeTrie(iterable, doSpaceSplit=False):
+
+	def searchTermIn(self, text, maxTokens=None):
+		"""
+			This function will search any token from the trie structure
+			if the text starting from each char of the text
+		"""
+		if text is None:
+			return None
+		foundTokens = []
+		for index in range(len(text)):
+			currentText = text[index:]
+			longest = self.findLongestTerm(currentText)
+			if longest is not None:
+				foundTokens.append(longest)
+			if maxTokens is not None and len(foundTokens) >= maxTokens:
+				break
+		return foundTokens
+
+	def hasTermIn(self, *args, **kwargs):
+		result = self.searchTermIn(*args, maxTokens=1, **kwargs)
+		if result is None or len(result) == 0:
+			return False
+		return True
+
+
+def makeTrie(iterable, doSpaceSplit=False, doStrSplit=False):
 	t = Trie()
 	for current in iterable:
+		if doStrSplit and isinstance(current, str):
+			current = list(current)
 		if doSpaceSplit:
 			t.addTerm(current.split(" "))
 		else:
@@ -175,15 +202,24 @@ def test1():
 
 def test2():
 	t = Trie()
-	text = "my name is namoris isi norty"
+	text = "my name namoris isi norty"
 	words = text.split()
 	t = Trie()
 	for word in words:
 		chars = list(word)
 		t.addTerm(chars)
 	print(t)
+	print(t.hasTermIn("op yyy namorisaa ttt"))
+def test3():
+	t = Trie()
+	text = "my name namoris isi norty"
+	words = text.split()
+	t = Trie()
+	for word in words:
+		chars = list(word)
+		t.addTerm(chars)
+	print(t)
+	print(t.hasTermIn("op yyy namorisaa ttt"))
 
 if __name__ == '__main__':
-	test1()
-	t = None
-	print(t)
+	test2()
