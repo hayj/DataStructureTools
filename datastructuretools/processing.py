@@ -240,7 +240,7 @@ def itemGeneratorWrapper(containersSubset, itemGenerator, itemQueue, pbarQueue, 
         for current in itemGenerator(container, logger=logger, verbose=verbose):
             itemQueue.put(current)
         pbarQueue.put(None)
-    itemQueue.close()
+    # itemQueue.close() # Why ???????
 
 class MultiprocessingGenerator():
     """
@@ -252,7 +252,19 @@ class MultiprocessingGenerator():
 
         TODO allow to stop all even we do not consum all data...
     """
-    def __init__(self, containers, itemGenerator, logger=None, verbose=True, name=None, parallelProcesses=cpuCount(), printRatio=0.001, queueMaxSize=100000, processVerbose=False):
+    def __init__\
+    (
+        self,
+        containers,
+        itemGenerator,
+        logger=None,
+        verbose=True,
+        name=None,
+        parallelProcesses=cpuCount(),
+        printRatio=0.001,
+        queueMaxSize=100000,
+        processVerbose=False,
+    ):
         self.processVerbose = processVerbose
         self.queueMaxSize = queueMaxSize
         self.printRatio = printRatio
