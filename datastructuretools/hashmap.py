@@ -6,7 +6,7 @@ from systemtools.logger import *
 from systemtools.location import *
 from systemtools.file import *
 from databasetools.mongo import *
-from datastructuretools import config
+from datastructuretools import config as dstConf
 import os
 import gzip
 import sys
@@ -82,15 +82,15 @@ class SerializableDict():
         # Config:
         self.databaseRoot = databaseRoot
         if self.databaseRoot is None:
-            self.databaseRoot = config.sdDatabaseRoot
+            self.databaseRoot = dstConf.sdDatabaseRoot
         if self.user is None:
-            self.user = config.sdUser
+            self.user = dstConf.sdUser
         if self.password is None:
-            self.password = config.sdPassword
+            self.password = dstConf.sdPassword
         if self.host is None:
-            self.host = config.sdHost
+            self.host = dstConf.sdHost
         if self.mongoDbName is None:
-            self.mongoDbName = config.sdDatabaseName
+            self.mongoDbName = dstConf.sdDatabaseName
         self.cleanMaxSizeMoReadModifiedOlder = cleanMaxSizeMoReadModifiedOlder
         self.initData()
         self.processingFunct = funct
