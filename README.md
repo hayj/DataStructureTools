@@ -2,6 +2,132 @@
 
 	pip install orderedset
 
+# MIDict
+
+The MIdict (Multi-indexed dictionary) data structure is a basic python dict that simultaneously index the key and the value. Thus you can get a key given its value. The access to a row in the datastructure always returns a list because a value can correspond to multiple rows. The data structure can index an amount of values greater than 2. Thus each element of a row is a value. The first element, which is a key in a classical python dict, is also a value. Values are not necessary unique (even the first) but whole rows are unique. Thus the datastrure bring a compound index on each columns that are not unique. See example below to see the usage of MIDict.
+
+## Usage
+
+Import the module:
+
+	from datastructuretools.midict import *
+
+Create a misc dict:
+
+	d = MIDict()
+	d['a'] = 10
+	d['b'] = 20
+	d['c'] = 30
+
+Get (remember that a key is not unique, so the dict return a list):
+
+	print(d['a'][0])
+	# Out: 10
+
+The main benefit of this data strucutre is that you can access directly to keys given a value (O(1) complexity because all elements of a row is indexed):
+
+	print(d[:, 30][0])
+	# Out: c
+
+You can also add a new row by simply use `__getitem__`:
+
+	d['d', 40]
+	print(d['d'][0])
+	# Out: 40
+
+You can set a row:
+
+	d['d'] = 50
+	print(d['d'])
+	# Out: [50]
+
+Using `__getitem__` you can add 2 rows having a common value:
+
+	d['d', 30]
+	print(d['d'])
+	# Out: [50, 30]
+
+Using `__setitem__` you can set multiple rows at a time:
+
+	print(d[:, 30])
+	d[:,30] = 'z'
+	print(d[:, 30])
+	# Out: ['c', 'd']
+	# ['z']
+
+Use `del` to delete rows from the structure:
+
+	del d[:, 30]
+	print(d[:, 30])
+	# Out: []
+
+You can create a dict with a large compound index, enjoy...
+
+	d = MIDict()
+	d['a', 'text1', 2.0, True]
+	d['b', 'text2', 1.8, True]
+	d['c', 'text1', 1.3, False]
+	print(d[:,:,:,True])
+	# Out: [('a', 'text1', 2.0), ('b', 'text2', 1.8)]
+
+# Cache
+
+A dict-like class that periodicaly clean values that receive less actions (read / write). It remove values randomly among those having less actions until reaching a certain amount of free RAM. The cleaning process is a background thread that check the free RAM each 0.5 sec by default.
+
+When using a Cache instance, don't forget to purge it (using `purge()` which stop the intern timer or using the with statement) because the timer that launch the periodic cleaning will keep a reference of the instance, thus the garbage collector won't remove the instance from RAM.
+
+## Usage
+
+Import some modules:
+
+	from datastructuretools import cache
+
+Define a function that take a key and return a value:
+
+	def getter(key, **kwargs):
+	    return str(key) + "_" + "a" * 1000000
+
+Construct the `Cache` object with a specified `minFreeRAM` in Go (you also can give a name):
+
+	c = cache.Cache(getter, minFreeRAM=5, name="MyCache")
+
+Loop to access a lot of values (this will call the `getter` function):
+	
+	for i in range(10):
+	    for u in range(1000):
+	        c[str(i) + "_" + str(u)]
+	    print("Sleeping...")
+	    sleep(1)
+
+Output:
+
+	Sleeping...
+	Sleeping...
+	Sleeping...
+	Sleeping...
+	4000 values cleaned from MyCache
+	Sleeping...
+	Sleeping...
+	Sleeping...
+	Sleeping...
+	3986 values cleaned from MyCache
+	Sleeping...
+	Sleeping...
+
+You can get the len of the cache, it will return the true length (without removed items):
+
+	print(len(c))
+
+Output:
+
+	2014
+
+Finally, when you access already generated items, the cache will directly return the value or recompute it using `getter`:
+
+	print(c["0_0"])
+
+The heuristic is straightforward: the cache remove items having less read/write randomly until reaching `minFreeRAM`.
+
 # SerializableDict
 
 A `SerializableDict` is a Python dict which works as a "cache". It can automatically serialize your data in a pickle file or in a Mongo database. It allow you to design your program more easily by providing a dict access which automatically process the given key (or "item"). It can limit the RAM usage / disk usage by removing old / not used items in the structure.

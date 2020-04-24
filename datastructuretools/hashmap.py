@@ -6,6 +6,7 @@ from systemtools.logger import *
 from systemtools.location import *
 from systemtools.file import *
 from databasetools.mongo import *
+from datatools.jsonutils import *
 from datastructuretools import config as dstConf
 import os
 import gzip
@@ -27,8 +28,9 @@ class SerializableDict():
         funct=None,
         compresslevel=0,
         logger=None,
-        verbose=False,
+        verbose=True,
         readAndAddOnly=False,
+        useFileSize=True,
         limit=None,
         cleanMaxSizeMoReadModifiedOlder=None,
         cleanNotReadOrModifiedSinceNDays=None,
@@ -44,10 +46,16 @@ class SerializableDict():
         useLocalhostIfRemoteUnreachable=True,
         mongoDbName=None,
         databaseRoot=None,
+        readIsAnAction=True,
+        mongoGlobalDumpStrategy=DUMP_STRATEGIES.serialize,
+        loadRetry=20,
+        loadSleepMin=0.5,
+        loadSleepMax=None,
     ):
         """
             Read the README
         """
+
         # Some checks:
         if dirPath is None:
             dirPath = tmpDir("SerializableDicts")
@@ -63,6 +71,8 @@ class SerializableDict():
         self.name = name
         if self.name is None:
             self.name = getRandomStr()
+        self.mongoGlobalDumpStrategy = mongoGlobalDumpStrategy
+        self.useFileSize = useFileSize
         self.doSerialize = doSerialize
         self.mongoDbName = mongoDbName
         self.serializeEachNAction = serializeEachNAction
@@ -79,6 +89,12 @@ class SerializableDict():
         self.password = password
         self.logger = logger
         self.verbose = verbose
+        self.readIsAnAction = readIsAnAction
+        self.loadRetry = loadRetry
+        self.loadSleepMin = loadSleepMin
+        self.loadSleepMax = loadSleepMax
+        if self.loadSleepMax is None:
+            self.loadSleepMax = self.loadSleepMin * 3
         # Config:
         self.databaseRoot = databaseRoot
         if self.databaseRoot is None:
@@ -205,7 +221,7 @@ class SerializableDict():
         """
         if self.useMongodb:
             field = "value." + field
-            value = dictToMongoStorable(value)
+            value = toSerializableJson(value, mongoStorable=True, globalDumpStrategy=self.mongoGlobalDumpStrategy, logger=self.logger, verbose=self.verbose)
             self.data.updateOne({self.mongoIndex: key}, {"$set": {field: value}})
         else:
             self.data[key]["value"][field] = value
@@ -215,7 +231,7 @@ class SerializableDict():
             Private method, enable an update of the root architecture a the SerializableDict
         """
         if self.useMongodb:
-            value = dictToMongoStorable(value)
+            value = toSerializableJson(value, mongoStorable=True, globalDumpStrategy=self.mongoGlobalDumpStrategy, logger=self.logger, verbose=self.verbose)
             self.data.updateOne({self.mongoIndex: key}, {"$set": {field: value}})
         else:
             self.data[key][field] = value
@@ -250,14 +266,17 @@ class SerializableDict():
                                 logError(listToStr(v2), self)
                     if self.raiseBadDesignException:
                         raise Exception(message)
-            self.gotAnAction()
+            if self.readIsAnAction:
+                self.gotAnAction()
             return value
         elif self.processingFunct is not None:
             self.add(key, self.processingFunct(key, *args, **kwargs))
-            self.gotAnAction()
+            if self.readIsAnAction:
+                self.gotAnAction()
             return self.get(key, *args, **kwargs)
         else:
-            self.gotAnAction()
+            if self.readIsAnAction:
+                self.gotAnAction()
             return None
 
     def has(self, *args, **kwargs):
@@ -268,21 +287,60 @@ class SerializableDict():
         else:
             return key in self.data
 
+    # def load(self):
+    #     if not self.useMongodb:
+    #         if self.doSerialize and (len(sortedGlob(self.filePath)) > 0):
+    #             f = None
+    #             data = None
+    #             for i in range(self.loadRetry):
+    #                 try:
+    #                     if self.compresslevel > 0:
+    #                         with gzip.open(self.filePath, 'rb', compresslevel=self.compresslevel) as f:
+    #                             data = pickle.load(f)
+    #                     else:
+    #                         with open(self.filePath, 'rb') as f:
+    #                             data = pickle.load(f)
+    #                     log(self.filePath + " loaded from the disk", self)
+    #                     break
+    #                 except Exception as e:
+    #                     logException(e, self)
+    #                     log("Failed to load " + self.filePath + " from the disk", self)
+    #                     currentSleep = getRandomInt(self.loadSleepMin, self.loadSleepMax)
+    #                     log("Sleeping " + str(currentSleep) + " seconds.")
+    #                     time.sleep(currentSleep)
+    #             if data is None:
+    #                 raise Exception("Unable to load " + self.filePath)
+    #             else:
+    #                 self.data = data
     def load(self):
         if not self.useMongodb:
             if self.doSerialize and (len(sortedGlob(self.filePath)) > 0):
-                log("Loading " + self.filePath + " from the disk", self)
                 f = None
-                if self.compresslevel > 0:
-                    f = gzip.GzipFile(self.filePath, 'rb', compresslevel=self.compresslevel)
+                data = None
+                for i in range(self.loadRetry):
+                    try:
+                        if self.compresslevel > 0:
+                            f = gzip.GzipFile(self.filePath, 'rb', compresslevel=self.compresslevel)
+                        else:
+                            f = open(self.filePath, 'rb')
+                        data = pickle.load(f)
+                        f.close()
+                        log(self.filePath + " loaded from the disk", self)
+                        break
+                    except Exception as e:
+                        logException(e, self)
+                        log("Failed to load " + self.filePath + " from the disk", self)
+                        try:
+                            f.close()
+                        except Exception as e:
+                            logException(e, self)
+                        currentSleep = getRandomInt(self.loadSleepMin, self.loadSleepMax)
+                        log("Sleeping " + str(currentSleep) + " seconds.")
+                        time.sleep(currentSleep)
+                if data is None:
+                    raise Exception("Unable to load " + self.filePath)
                 else:
-                    f = open(self.filePath, 'rb')
-                try:
-                    self.data = pickle.load(f)
-                except Exception as e:
-                    logException(e, self, location="SerializableDict load")
-                finally:
-                    f.close()
+                    self.data = data
 
     def close(self):
         self.clean()
@@ -304,6 +362,7 @@ class SerializableDict():
                     logger=self.logger,
                     verbose=self.verbose,
                     databaseRoot=self.databaseRoot,
+                    globalDumpStrategy=self.mongoGlobalDumpStrategy,
                 )
             except Exception as e:
                 if self.useLocalhostIfRemoteUnreachable and not alreadyRetried:
@@ -351,11 +410,19 @@ class SerializableDict():
             toDelete.add(sortedIndex[i][0])
         return toDelete
 
+    def doUseFileSize(self):
+        return isFile(self.filePath) and self.useFileSize and self.doSerialize
+
     def dataSizeMo(self):
         """
             Warning getsizeof doesn't give real size of a dict because it can keep a huge size for performance issue, so we have to calculate the data size on each element:
             https://stackoverflow.com/questions/11129546/python-sys-getsizeof-reports-same-size-after-items-removed-from-list-dict
         """
+        try:
+            if self.doUseFileSize():
+                return getSize(self.filePath, unit='m')
+        except Exception as e:
+            logException(e, self)
         total = 0
         for key, value in self.data.items():
             total += objectSizeMo(key)
@@ -392,6 +459,8 @@ class SerializableDict():
                     cleanedCount += len(toDelete)
                     for current in toDelete:
                         del self.data[current]
+                    if self.doUseFileSize():
+                        self.serialize()
         # Here you can other "clean condition"
         # ...
         if cleanedCount > 0:
@@ -443,15 +512,22 @@ class SerializableHashMap():
     def load(self):
         if (len(sortedGlob(self.filePath)) > 0):
             print("Loading " + self.filePath + " from the disk")
-            f = None
-            if self.compresslevel > 0:
-                f = gzip.GzipFile(self.filePath, 'r', compresslevel=self.compresslevel)
-            else:
-                f = open(self.filePath, 'r')
-            try:
-                self.data = pickle.load(f)
-            finally:
-                f.close()
+            for i in range(20):
+                try:
+                    f = None
+                    if self.compresslevel > 0:
+                        f = gzip.GzipFile(self.filePath, 'r', compresslevel=self.compresslevel)
+                    else:
+                        f = open(self.filePath, 'r')
+                        self.data = pickle.load(f)
+                    f.close()
+                    break
+                except Exception as e:
+                    time.sleep(0.2)
+                finally:
+                    try:
+                        f.close()
+                    except: pass
 
     def clean(self):
         if (len(sortedGlob(self.filePath)) > 0):

@@ -1,7 +1,10 @@
 # coding: utf-8
 
 from queue import *
-from orderedset import OrderedSet
+try:
+    from orderedset import OrderedSet
+except Exception as e:
+    print(e)
 from threading import Lock
 
 
